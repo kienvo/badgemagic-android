@@ -2,7 +2,7 @@ name: Badge Magic CI
 
 on:
   push:
-    branches: [ development ]
+    branches: [ development, v1.7-experiment ]
   pull_request:
     branches: [ master, development ]
 

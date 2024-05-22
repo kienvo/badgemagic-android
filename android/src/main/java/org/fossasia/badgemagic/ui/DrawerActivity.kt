@@ -58,7 +58,6 @@ class DrawerActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedLi
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        checkLocationPermission()
 
         binding = ActivityDrawerBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -290,24 +289,43 @@ class DrawerActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedLi
     }
 
     private fun checkManifestPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_PRIVILEGED) == PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-        ) {
-            Timber.i { "Coarse permission granted" }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            Timber.i { "Location permission granted" }
+
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+            ) {
+                Timber.i { "Bluetooth permissions granted" }
+            } else {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(
+                        Manifest.permission.BLUETOOTH_SCAN,
+                        Manifest.permission.BLUETOOTH_CONNECT
+                    ),
+                    REQUEST_PERMISSION_CODE
+                )
+            }
         } else {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.BLUETOOTH_ADMIN,
-                    Manifest.permission.BLUETOOTH_PRIVILEGED,
-                    Manifest.permission.BLUETOOTH
-                ),
-                REQUEST_PERMISSION_CODE
-            )
+            AlertDialog.Builder(this)
+                .setIcon(ContextCompat.getDrawable(this, R.drawable.ic_caution))
+                .setTitle(getString(R.string.location_required_title))
+                .setMessage(getString(R.string.location_required_message))
+                .setPositiveButton("OK") { dialog, which ->
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        ),
+                        REQUEST_PERMISSION_CODE
+                    )
+                }
+                .setNegativeButton("Cancel") { dialog, which ->
+                    Toast.makeText(this, "Please allow location permissions. Bluetooth LE requires this to work.", Toast.LENGTH_SHORT).show()
+                }				
+                .create()
+                .show()
         }
     }
 
@@ -381,36 +399,5 @@ class DrawerActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedLi
         val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
         drawerLayout.closeDrawer(GravityCompat.START)
         return true
-    }
-
-    private fun hasLocationPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            this, Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-    private fun checkLocationPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
-        ) {
-
-            // Show an explanation to the user why the permission is needed
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION) ||
-                ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-            ) {
-
-                AlertDialog.Builder(this)
-                    .setTitle("Location Permission Needed")
-                    .setMessage("This app needs the Location permission to scan for nearby ble devices. Please grant the permission.")
-                    .setPositiveButton("OK") { _, _ ->
-                    }
-                    .create()
-                    .show()
-            } else {
-                ActivityCompat.requestPermissions(
-                    this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                    REQUEST_PERMISSION_CODE
-                )
-            }
-        }
     }
 }
